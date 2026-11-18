@@ -1,4 +1,4 @@
-// Личный рекорд (all-time best score) в localStorage.
+// Personal best (all-time best score) in localStorage.
 
 const STORAGE_KEY = "neonarena.best.v1";
 
@@ -11,13 +11,13 @@ export function loadBest(): number {
   }
 }
 
-/** Сохранить, если новый счёт больше. Вернуть актуальный рекорд. */
+/** Save if the new score is higher. Returns the current best. */
 export function saveBest(score: number): number {
   const best = Math.max(loadBest(), score);
   try {
     localStorage.setItem(STORAGE_KEY, String(best));
   } catch {
-    /* недоступно - игнорируем */
+    /* not available, ignore */
   }
   return best;
 }

@@ -1,6 +1,6 @@
-// Канонический прод-домен мини-аппа. Манифест ДОЛЖЕН всегда отдавать один и тот
-// же адрес (под него подписан accountAssociation), поэтому не используем VERCEL_URL
-// - он у каждого деплоя свой. NEXT_PUBLIC_URL оставлен как ручной override.
+// Canonical prod domain of the mini app. The manifest MUST always return the same
+// URL (accountAssociation is signed for it), so we don't use VERCEL_URL,
+// which changes on every deploy. NEXT_PUBLIC_URL is kept as a manual override.
 const ROOT_URL =
   process.env.NEXT_PUBLIC_URL ||
   (process.env.NODE_ENV === "development"
@@ -13,9 +13,9 @@ const ROOT_URL =
  * @see {@link https://docs.base.org/mini-apps/features/manifest}
  */
 export const minikitConfig = {
-  // Подпись владения доменом (JSON Farcaster Signature), сгенерированная
-  // Farcaster-тулом для домена base-blaster.vercel.app. Привязывает мини-аппу
-  // к FID 575931 (custody 0x386e97e358B8169cf920C429F8ca28a3d45a816E).
+  // Domain ownership signature (JSON Farcaster Signature) generated
+  // with the Farcaster tool for base-blaster.vercel.app. Ties the mini app
+  // to FID 575931 (custody 0x386e97e358B8169cf920C429F8ca28a3d45a816E).
   accountAssociation: {
     header:
       "eyJmaWQiOjU3NTkzMSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDM4NmU5N2UzNThCODE2OWNmOTIwQzQyOUY4Y2EyOGEzZDQ1YTgxNkUifQ",
@@ -23,7 +23,7 @@ export const minikitConfig = {
     signature:
       "Q8KMxhpPVyWD9LnXKTzZ6FNgKs+Ml4EEuenIO/DZfulbv1Is0AAv4jBSQ9hm2hRHFkN/ME7EydQEmuKhAeM3Yxw=",
   },
-  // Адрес-владелец из Base Build (тоже подставляется при верификации).
+  // Owner address from Base Build (also filled in during verification).
   baseBuilder: {
     ownerAddress: "",
   },
@@ -31,8 +31,8 @@ export const minikitConfig = {
     version: "1",
     name: "Base Blast",
     subtitle: "Neon arena survival shooter",
-    // Farcaster ограничивает description 170 символами и запрещает спецсимволы
-    // (@ # $ % ^ & * + = / \ | ~ « »). Держим строку короткой и чистой.
+    // Farcaster caps description at 170 chars and doesn't allow special chars
+    // (@ # $ % ^ & * + = / \ | ~ « »). Keep it short and clean.
     description:
       "Twin-stick neon survival shooter. Move with one thumb, aim and fire with the other. Hold off the swarm wave after wave, beat your best onchain, and share it.",
     screenshotUrls: [`${ROOT_URL}/screenshot.png`],

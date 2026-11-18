@@ -1,21 +1,21 @@
 // ───────────────────────────────────────────────────────────────────────────
-// Streak - серия дней подряд, хранится в localStorage.
-// Считаем по ключам дат UTC ("YYYY-MM-DD"). Идемпотентно: повторная победа
-// в тот же день не накручивает серию.
+// Streak: consecutive days, stored in localStorage.
+// Counted by UTC date keys ("YYYY-MM-DD"). Idempotent: a second win
+// on the same day doesn't bump the streak.
 // ───────────────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "lightsout.progress.v1";
 
 export interface Progress {
-  streak: number; // текущая серия
-  bestStreak: number; // лучший рекорд
-  lastWonKey: string | null; // дата последней победы (UTC)
+  streak: number; // current streak
+  bestStreak: number; // best ever
+  lastWonKey: string | null; // date of the last win (UTC)
 }
 
 const EMPTY: Progress = { streak: 0, bestStreak: 0, lastWonKey: null };
 
 export function loadProgress(): Progress {
-  if (typeof window === "undefined") return EMPTY; // защита от SSR
+  if (typeof window === "undefined") return EMPTY; // SSR guard
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return EMPTY;
@@ -34,11 +34,11 @@ function save(p: Progress): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
   } catch {
-    /* localStorage недоступен (приватный режим) - молча игнорируем */
+    /* localStorage not available (private mode), ignore */
   }
 }
 
-/** Предыдущий календарный день для ключа "YYYY-MM-DD" (в UTC). */
+/** Previous calendar day for a "YYYY-MM-DD" key (UTC). */
 function previousKey(key: string): string {
   const d = new Date(`${key}T00:00:00.000Z`);
   d.setUTCDate(d.getUTCDate() - 1);
@@ -46,10 +46,10 @@ function previousKey(key: string): string {
 }
 
 /**
- * Зафиксировать победу за день `todayKey` и вернуть обновлённый прогресс.
- *  • если уже выигран сегодня - ничего не меняем (идемпотентно);
- *  • если последняя победа была вчера - серия +1;
- *  • иначе (первый день или пропуск) - серия = 1.
+ * Record a win for `todayKey` and return the updated progress.
+ *  • already won today: no change (idempotent);
+ *  • last win was yesterday: streak +1;
+ *  • otherwise (first day or a gap): streak = 1.
  */
 export function recordWin(todayKey: string): Progress {
   const cur = loadProgress();

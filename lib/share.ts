@@ -1,4 +1,4 @@
-// Текст результата для шэринга (compose cast / share).
+// Result text for sharing (compose cast / share).
 
 export const APP_NAME = "Base Blast";
 

@@ -1,22 +1,22 @@
 // ───────────────────────────────────────────────────────────────────────────
-// Чистая ДЕТЕРМИНИРОВАННАЯ симуляция Base Blast.
+// Pure DETERMINISTIC simulation of Base Blast.
 //
-// Не зависит от canvas/DOM - один и тот же код крутят:
-//   • клиент (lib/arena.ts рендерит состояние и пишет инпуты по тикам);
-//   • сервер-верификатор (/api/score пересимулирует ран и сверяет счёт).
+// No canvas/DOM, so the exact same code runs on:
+//   • the client (lib/arena.ts renders the state and records inputs per tick);
+//   • the server verifier (/api/score replays the run and checks the score).
 //
-// Для воспроизводимости:
-//   • фиксированный шаг времени FIXED_DT (логика не зависит от FPS);
-//   • фиксированное виртуальное поле VW×VH (одинаковое на всех устройствах);
-//   • вся игровая случайность идёт через seeded-RNG (mulberry32).
+// To keep it reproducible:
+//   • fixed time step FIXED_DT (logic doesn't depend on FPS);
+//   • fixed virtual field VW×VH (same on every device);
+//   • all game randomness goes through a seeded RNG (mulberry32).
 //
-// Косметика (частицы, тряска, звук) живёт в arena.ts и управляется событиями,
-// которые возвращает stepSim - она на счёт не влияет и в симуляции не нужна.
+// Cosmetics (particles, shake, sound) live in arena.ts and are driven by the events
+// stepSim returns. They don't affect the score and aren't needed in the sim.
 // ───────────────────────────────────────────────────────────────────────────
 
-export const FIXED_DT = 1 / 60; // шаг симуляции (сек)
-export const VW = 540; // ширина виртуального поля
-export const VH = 960; // высота виртуального поля
+export const FIXED_DT = 1 / 60; // sim step (sec)
+export const VW = 540; // virtual field width
+export const VH = 960; // virtual field height
 
 export const PLAYER_R = 14;
 export const PLAYER_SPEED = 235;
@@ -45,7 +45,7 @@ export interface Enemy {
   speed: number;
   hp: number;
   type: EnemyType;
-  spin: number; // косметический угол (детерминированный)
+  spin: number; // cosmetic angle (deterministic)
 }
 
 export interface Bullet {
@@ -62,15 +62,15 @@ export interface Powerup {
   life: number;
 }
 
-/** Снимок ввода за один тик. Записывается клиентом, повторяется сервером. */
+/** Input snapshot for one tick. Recorded by the client, replayed by the server. */
 export interface SimInput {
-  moveX: number; // -1..1 (уже нормировано по величине)
+  moveX: number; // -1..1 (already normalized)
   moveY: number;
-  aim: number; // радианы - куда смотрит нос
+  aim: number; // radians, where the nose points
   firing: boolean;
 }
 
-/** События тика для косметики на клиенте (не влияют на счёт). */
+/** Tick events for client cosmetics (don't affect score). */
 export interface SimEvent {
   type: "shoot" | "kill" | "hit" | "power" | "split";
   x?: number;
@@ -102,7 +102,7 @@ export interface SimState {
   gameOver: boolean;
 }
 
-// mulberry32 - быстрый детерминированный PRNG, возвращает [0,1).
+// mulberry32: fast deterministic PRNG, returns [0,1).
 function rng(s: SimState): number {
   s.rngState = (s.rngState + 0x6d2b79f5) | 0;
   let t = Math.imul(s.rngState ^ (s.rngState >>> 15), 1 | s.rngState);
@@ -242,7 +242,7 @@ function applyPower(s: SimState, kind: PowerKind): void {
   else if (kind === "triple") s.tripleTimer = TRIPLE_TIME;
 }
 
-/** Один фиксированный тик симуляции. Мутирует state, возвращает события. */
+/** One fixed sim tick. Mutates state, returns events. */
 export function stepSim(s: SimState, input: SimInput): SimEvent[] {
   const events: SimEvent[] = [];
   if (s.gameOver) return events;
@@ -261,12 +261,12 @@ export function stepSim(s: SimState, input: SimInput): SimEvent[] {
     }
   }
 
-  // Движение игрока (величина уже нормирована клиентом).
+  // Player movement (magnitude already normalized by the client).
   s.px = clamp(s.px + input.moveX * PLAYER_SPEED * dt, PLAYER_R, VW - PLAYER_R);
   s.py = clamp(s.py + input.moveY * PLAYER_SPEED * dt, PLAYER_R, VH - PLAYER_R);
   s.aim = input.aim;
 
-  // Спавн.
+  // Spawning.
   const spawnEvery = Math.max(0.4, 1.4 - s.wave * 0.12);
   s.spawnTimer += dt;
   if (s.spawnTimer >= spawnEvery) {
@@ -274,7 +274,7 @@ export function stepSim(s: SimState, input: SimInput): SimEvent[] {
     spawnEnemy(s);
   }
 
-  // Огонь.
+  // Firing.
   const interval = s.rapidTimer > 0 ? FIRE_INTERVAL * 0.5 : FIRE_INTERVAL;
   s.fireTimer += dt;
   if (input.firing) {
@@ -287,7 +287,7 @@ export function stepSim(s: SimState, input: SimInput): SimEvent[] {
     s.fireTimer = interval;
   }
 
-  // Пули.
+  // Bullets.
   for (const b of s.bullets) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
@@ -296,7 +296,7 @@ export function stepSim(s: SimState, input: SimInput): SimEvent[] {
     (b) => b.x > -10 && b.x < VW + 10 && b.y > -10 && b.y < VH + 10,
   );
 
-  // Враги к игроку.
+  // Enemies move toward the player.
   for (const e of s.enemies) {
     const a = Math.atan2(s.py - e.y, s.px - e.x);
     e.x += Math.cos(a) * e.speed * dt;
@@ -304,7 +304,7 @@ export function stepSim(s: SimState, input: SimInput): SimEvent[] {
     e.spin += dt * (e.type === "tank" ? 0.8 : 2.2);
   }
 
-  // Пуля↔враг.
+  // Bullet vs enemy.
   for (const e of s.enemies) {
     for (const b of s.bullets) {
       const dx = e.x - b.x;
@@ -322,7 +322,7 @@ export function stepSim(s: SimState, input: SimInput): SimEvent[] {
   }
   s.enemies = s.enemies.filter((e) => e.hp > 0);
 
-  // Пауэр-апы.
+  // Power-ups.
   for (const p of s.powerups) {
     p.life -= dt;
     const dx = p.x - s.px;
@@ -335,7 +335,7 @@ export function stepSim(s: SimState, input: SimInput): SimEvent[] {
   }
   s.powerups = s.powerups.filter((p) => p.life > 0);
 
-  // Враг↔игрок.
+  // Enemy vs player.
   for (const e of s.enemies) {
     const dx = e.x - s.px;
     const dy = e.y - s.py;
@@ -360,7 +360,7 @@ export function stepSim(s: SimState, input: SimInput): SimEvent[] {
   return events;
 }
 
-/** Серверная проверка: прогнать ран целиком и вернуть итог. */
+/** Server check: run the whole replay and return the result. */
 export function simulateRun(
   seed: number,
   inputs: SimInput[],

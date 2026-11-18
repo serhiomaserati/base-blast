@@ -55,7 +55,7 @@ export default function Home() {
   const [muted, setMuted] = useState(false);
   const mutedRef = useRef(false);
 
-  // Лидерборд (ончейн)
+  // Leaderboard (onchain)
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
   const lastRunRef = useRef<Run | null>(null);
@@ -70,7 +70,7 @@ export default function Home() {
     gasless: submitGasless,
   } = useSubmitScore();
 
-  // Загрузка статов при старте.
+  // Load stats on start.
   useEffect(() => {
     const prog = loadProgress();
     setBest(loadBest());
@@ -78,14 +78,14 @@ export default function Home() {
     setPlayedToday(prog.lastWonKey === todayKey());
   }, []);
 
-  // Движок арены живёт только на вкладке Game (создаём при входе, рушим при выходе).
+  // The arena engine only lives on the Game tab (created on enter, destroyed on leave).
   useEffect(() => {
     if (tab !== "game" || !canvasRef.current) return;
     const game = new ArenaGame(canvasRef.current, {
       onGameOver: (finalScore, finalWave) => {
-        lastRunRef.current = game.getRun(); // записанный ран для ончейн-проверки
+        lastRunRef.current = game.getRun(); // recorded run for the onchain check
         setBest(saveBest(finalScore));
-        setStreak(recordWin(todayKey()).streak); // дневной чек-ин
+        setStreak(recordWin(todayKey()).streak); // daily check-in
         setPlayedToday(true);
         setScore(finalScore);
         setWave(finalWave);
@@ -110,7 +110,7 @@ export default function Home() {
     setPhase("playing");
   }
 
-  // Обновить ончейн-данные после успешной отправки.
+  // Refresh onchain data after a successful submit.
   useEffect(() => {
     if (submitPhase === "done") {
       refetchTop();
@@ -118,7 +118,7 @@ export default function Home() {
     }
   }, [submitPhase, refetchTop, refetchBest]);
 
-  // Отправить записанный ран в лидерборд (с авто-переключением сети).
+  // Submit the recorded run to the leaderboard (switches network if needed).
   async function submitToLeaderboard() {
     if (!lbEnabled || !isConnected || !address || !lastRunRef.current) return;
     try {
@@ -126,7 +126,7 @@ export default function Home() {
         await switchChainAsync({ chainId: LEADERBOARD_CHAIN_ID });
       }
     } catch {
-      return; // отказались переключать сеть
+      return; // user refused to switch network
     }
     await submit(lastRunRef.current, address);
   }
@@ -140,7 +140,7 @@ export default function Home() {
     });
   }
 
-  // Дневной чек-ин из «Арсенала».
+  // Daily check-in from the Arsenal tab.
   function checkIn() {
     setStreak(recordWin(todayKey()).streak);
     setPlayedToday(true);
@@ -163,7 +163,7 @@ export default function Home() {
           await navigator.share({ text: full });
           return;
         } catch {
-          /* отменили */
+          /* cancelled */
         }
       }
       try {
@@ -171,14 +171,14 @@ export default function Home() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch {
-        /* нет буфера */
+        /* no clipboard */
       }
     }
   }
 
   return (
     <main className="retro-grid relative min-h-dvh overflow-hidden bg-[#05080f] text-slate-100">
-      {/* фоновые неоновые пятна */}
+      {/* background neon blobs */}
       <div className="pointer-events-none absolute -top-40 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-[120px]" />
       <div className="pointer-events-none absolute -bottom-40 -right-24 h-80 w-80 rounded-full bg-fuchsia-500/15 blur-[120px]" />
 
@@ -191,7 +191,7 @@ export default function Home() {
           paddingRight: "max(1rem, env(safe-area-inset-right))",
         }}
       >
-        {/* Шапка: бренд + кошелёк */}
+        {/* Header: brand + wallet */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_12px_2px] shadow-emerald-400/80" />
@@ -215,7 +215,7 @@ export default function Home() {
           </Wallet>
         </header>
 
-        {/* Вкладки */}
+        {/* Tabs */}
         <nav className="grid grid-cols-3 gap-1 rounded-full bg-slate-900/70 p-1 ring-1 ring-slate-800">
           {(
             [

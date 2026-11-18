@@ -4,7 +4,7 @@ import { base, baseSepolia } from "wagmi/chains";
 import { OnchainKitProvider } from "@coinbase/onchainkit";
 import "@coinbase/onchainkit/styles.css";
 
-// Сеть лидерборда задаётся env: 84532 = Base Sepolia (тест), иначе Base mainnet.
+// Leaderboard network comes from env: 84532 = Base Sepolia (testnet), otherwise Base mainnet.
 const chain =
   Number(process.env.NEXT_PUBLIC_CHAIN_ID) === baseSepolia.id
     ? baseSepolia

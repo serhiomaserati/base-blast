@@ -8,8 +8,8 @@ import "./globals.css";
 export async function generateMetadata(): Promise<Metadata> {
   const app = minikitConfig.miniapp;
 
-  // Объект embed, который клиент ленты (Base App / Farcaster) парсит,
-  // чтобы показать превью-карточку с кнопкой запуска мини-аппа.
+  // Embed object that feed clients (Base App / Farcaster) parse
+  // to show a preview card with a launch button.
   const embed = {
     version: app.version,
     imageUrl: app.heroImageUrl,
@@ -35,13 +35,13 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [app.ogImageUrl],
     },
     other: {
-      // Новый формат (Base App / актуальные клиенты).
+      // New format (Base App / current clients).
       "fc:miniapp": embedJson,
-      // Легаси-формат - для совместимости со старыми Farcaster-клиентами.
+      // Legacy format for older Farcaster clients.
       "fc:frame": embedJson,
-      // Верификация владения доменом в Base Dashboard (base.dev).
+      // Domain ownership verification for Base Dashboard (base.dev).
       "base:app_id": "6a240987ab28df7fd2fc173c",
-      // Верификация проекта в Talent Protocol (talent app).
+      // Project verification for Talent Protocol.
       "talentapp:project_verification":
         "2454b9c8959e03a5e1e1e1cdfd742829dddf5b4a2eea0bce92298588f7574f0a9d63925931ab368d92264f742ebe08ddcaf66d4b5f76557ceaab9bf451d22ab2",
     },
@@ -58,7 +58,7 @@ const sourceCodePro = Source_Code_Pro({
   subsets: ["latin"],
 });
 
-// Игровой «аркадный» шрифт для заголовков/брендинга.
+// Arcade font for headings / branding.
 const orbitron = Orbitron({
   variable: "--font-orbitron",
   subsets: ["latin"],

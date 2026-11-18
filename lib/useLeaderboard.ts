@@ -26,7 +26,7 @@ export interface TopEntry {
   score: bigint;
 }
 
-/** Топ-игроки с контракта (пусто, пока лидерборд не задеплоен). */
+/** Top players from the contract (empty until the leaderboard is deployed). */
 export function useTopScores() {
   const { data, refetch, isLoading } = useReadContract({
     address: LEADERBOARD_ADDRESS,
@@ -42,7 +42,7 @@ export function useTopScores() {
   };
 }
 
-/** Личный ончейн-рекорд игрока. */
+/** Player's onchain best. */
 export function useOnchainBest(address?: `0x${string}`) {
   const { data, refetch } = useReadContract({
     address: LEADERBOARD_ADDRESS,
@@ -57,16 +57,16 @@ export function useOnchainBest(address?: `0x${string}`) {
 
 export type SubmitPhase =
   | "idle"
-  | "verifying" // сервер пересимулирует и подписывает
-  | "submitting" // ждём подпись кошелька / отправку
-  | "confirming" // ждём подтверждение транзакции
+  | "verifying" // server replays and signs
+  | "submitting" // waiting for wallet signature / send
+  | "confirming" // waiting for tx confirmation
   | "done"
   | "error";
 
-/** Поток отправки счёта: /api/score (подпись) → контракт submitScore.
- *  Если кошелёк (smart wallet) поддерживает EIP-5792 + paymaster и задан
- *  NEXT_PUBLIC_PAYMASTER_URL - сабмит идёт gasless (sendCalls). Иначе -
- *  обычная транзакция (игрок платит газ). */
+/** Submit flow: /api/score (signature) → contract submitScore.
+ *  If the wallet (smart wallet) supports EIP-5792 + paymaster and
+ *  NEXT_PUBLIC_PAYMASTER_URL is set, the submit is gasless (sendCalls). Otherwise
+ *  it's a normal tx (player pays gas). */
 export function useSubmitScore() {
   const [phase, setPhase] = useState<SubmitPhase>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +79,7 @@ export function useSubmitScore() {
   const { writeContractAsync } = useWriteContract();
   const { sendCallsAsync } = useSendCalls();
 
-  // Поддерживает ли подключённый кошелёк gasless (только при заданном URL).
+  // Does the connected wallet support gasless (only if the URL is set).
   const { data: capabilities } = useCapabilities({
     query: {
       enabled: !!LEADERBOARD_PAYMASTER_URL && leaderboardEnabled() && isConnected,
@@ -89,14 +89,14 @@ export function useSubmitScore() {
     !!LEADERBOARD_PAYMASTER_URL &&
     !!capabilities?.[LEADERBOARD_CHAIN_ID]?.paymasterService?.supported;
 
-  // Подтверждение обычной транзакции (EOA-путь).
+  // Confirmation for a normal tx (EOA path).
   const { isSuccess: txMined } = useWaitForTransactionReceipt({
     hash,
     chainId: LEADERBOARD_CHAIN_ID,
     query: { enabled: !!hash && !callsId },
   });
 
-  // Подтверждение gasless-бандла (EIP-5792).
+  // Confirmation for a gasless bundle (EIP-5792).
   const { data: callsStatus } = useCallsStatus({
     id: callsId as string,
     query: {
@@ -157,7 +157,7 @@ export function useSubmitScore() {
 
         setPhase("submitting");
         if (paymasterSupported) {
-          // Gasless: спонсируем газ через CDP Paymaster (smart wallet).
+          // Gasless: gas sponsored via CDP Paymaster (smart wallet).
           const result = await sendCallsAsync({
             calls: [
               {
@@ -169,7 +169,7 @@ export function useSubmitScore() {
             ],
             capabilities: {
               paymasterService: { url: LEADERBOARD_PAYMASTER_URL as string },
-              // Builder Code attribution (кошелёк проигнорит, если не поддержит).
+              // Builder Code attribution (wallet ignores it if unsupported).
               dataSuffix: {
                 value: BUILDER_CODE_DATA_SUFFIX,
                 optional: true,
@@ -186,7 +186,7 @@ export function useSubmitScore() {
             functionName: "submitScore",
             args,
             chainId: LEADERBOARD_CHAIN_ID,
-            // Builder Code attribution - дописывается в calldata транзакции.
+            // Builder Code attribution, appended to the tx calldata.
             dataSuffix: BUILDER_CODE_DATA_SUFFIX,
           });
           setHash(txHash);

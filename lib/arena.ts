@@ -1,11 +1,11 @@
 // ───────────────────────────────────────────────────────────────────────────
-// Base Blast - оболочка движка: ввод + рендер + запись рана.
+// Base Blast engine shell: input + rendering + run recording.
 //
-// Вся ИГРОВАЯ логика живёт в детерминированной симуляции lib/sim.ts. Здесь:
-//   • фиксированный таймстеп (накапливаем реальное время, гоним тики по FIXED_DT);
-//   • снимок ввода на каждый тик пишется в this.inputs (для серверной проверки);
-//   • рендер виртуального поля VW×VH с масштабом/леттербоксом под любой canvas;
-//   • косметика (частицы, тряска, звук) по событиям из stepSim - на счёт не влияет.
+// All GAME logic lives in the deterministic sim in lib/sim.ts. This file does:
+//   • fixed timestep (accumulate real time, run ticks at FIXED_DT);
+//   • per-tick input snapshot goes into this.inputs (for the server check);
+//   • renders the VW×VH virtual field, scaled/letterboxed to any canvas;
+//   • cosmetics (particles, shake, sound) driven by stepSim events, no effect on score.
 // ───────────────────────────────────────────────────────────────────────────
 
 import {
@@ -30,7 +30,7 @@ export interface ArenaCallbacks {
   onGameOver: (score: number, wave: number) => void;
 }
 
-/** Записанный ран для отправки на верификацию. */
+/** Recorded run sent for verification. */
 export interface Run {
   seed: number;
   inputs: SimInput[];
@@ -64,18 +64,18 @@ const newStick = (): Stick => ({
   active: false,
 });
 
-const STICK_MAX = 70; // радиус тач-стика (виртуальные единицы)
+const STICK_MAX = 70; // touch stick radius (virtual units)
 const STICK_DEAD = 8;
 
-// ── Фоновая музыка (процедурный synthwave-луп, без аудиофайлов) ───────────────
-// Прогрессия Am - F - C - G (i-VI-III-VII в ля-миноре): бас на 1-й и 3-й доле +
-// арпеджио аккордовыми тонами 8-ми нотами. Планируется через AudioContext-часы
-// с lookahead, так что не дёргается под нагрузкой игрового rAF.
-const MUSIC_VOL = 0.3; // общий уровень музыкальной шины
+// ── Background music (procedural synthwave loop, no audio files) ──────────────
+// Am - F - C - G progression (i-VI-III-VII in A minor): bass on beats 1 and 3 +
+// 8th-note arpeggio on chord tones. Scheduled on the AudioContext clock
+// with lookahead, so it doesn't stutter when the game loop is busy.
+const MUSIC_VOL = 0.3; // music bus volume
 const MUSIC_BPM = 96;
-const MUSIC_STEPS_PER_BAR = 16; // 16-е ноты в такте
+const MUSIC_STEPS_PER_BAR = 16; // 16th notes per bar
 const MUSIC_BARS = 4;
-const MUSIC_STEP = 60 / MUSIC_BPM / 4; // длительность 16-й ноты, сек
+const MUSIC_STEP = 60 / MUSIC_BPM / 4; // 16th note length, sec
 const MUSIC_PROG: ReadonlyArray<{ bass: number; notes: readonly number[] }> = [
   { bass: 110.0, notes: [220.0, 261.63, 329.63] }, // Am: A2 / A3 C4 E4
   { bass: 87.31, notes: [174.61, 220.0, 261.63] }, // F:  F2 / F3 A3 C4
@@ -88,28 +88,28 @@ export class ArenaGame {
   private ctx: CanvasRenderingContext2D;
   private cb: ArenaCallbacks;
 
-  private w = 0; // размеры canvas (CSS px)
+  private w = 0; // canvas size (CSS px)
   private h = 0;
   private dpr = 1;
-  private scale = 1; // виртуал → canvas
-  private ox = 0; // леттербокс-офсет
+  private scale = 1; // virtual → canvas
+  private ox = 0; // letterbox offset
   private oy = 0;
 
   private raf = 0;
   private lastTs = 0;
-  private acc = 0; // накопитель времени для фикс-шага
+  private acc = 0; // time accumulator for the fixed step
   private running = false;
 
-  // Симуляция + запись рана
+  // Sim + run recording
   private sim: SimState = createSim(1);
   private seed = 1;
   private inputs: SimInput[] = [];
 
-  // Косметика (не влияет на счёт)
+  // Cosmetics (don't affect score)
   private particles: Particle[] = [];
   private shake = 0;
 
-  // Ввод (координаты - в виртуальных единицах поля)
+  // Input (coords in virtual field units)
   private keys = new Set<string>();
   private hasMouse = false;
   private mouseX = 0;
@@ -118,11 +118,11 @@ export class ArenaGame {
   private moveStick: Stick = newStick();
   private aimStick: Stick = newStick();
 
-  // Звук
+  // Sound
   private audio?: AudioContext;
   private muted = false;
 
-  // Фоновая музыка
+  // Background music
   private musicGain?: GainNode;
   private musicOn = false;
   private musicStep = 0;
@@ -145,7 +145,7 @@ export class ArenaGame {
     this.reset();
   }
 
-  // ── Жизненный цикл ────────────────────────────────────────────────────────
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   reset(): void {
     this.seed = (Math.random() * 0x7fffffff) | 0;
@@ -162,7 +162,7 @@ export class ArenaGame {
 
   start(): void {
     if (this.running) return;
-    // AudioContext можно создавать только из пользовательского жеста (клик Start).
+    // AudioContext can only be created from a user gesture (Start click).
     if (!this.audio) {
       const Ctor =
         window.AudioContext ||
@@ -201,12 +201,12 @@ export class ArenaGame {
     }
   }
 
-  /** Записанный ран (seed + инпуты по тикам) для серверной проверки. */
+  /** Recorded run (seed + per-tick inputs) for the server check. */
   getRun(): Run {
     return { seed: this.seed, inputs: this.inputs };
   }
 
-  // ── Размеры / координаты ──────────────────────────────────────────────────
+  // ── Size / coordinates ────────────────────────────────────────────────────
 
   private resize(): void {
     const rect = this.canvas.getBoundingClientRect();
@@ -226,18 +226,18 @@ export class ArenaGame {
     this.oy = (this.h - VH * this.scale) / 2;
   }
 
-  /** canvas px → виртуальные координаты поля. */
+  /** canvas px → virtual field coords. */
   private toVirtual(cx: number, cy: number): { x: number; y: number } {
     return { x: (cx - this.ox) / this.scale, y: (cy - this.oy) / this.scale };
   }
 
-  // ── Игровой цикл ──────────────────────────────────────────────────────────
+  // ── Game loop ─────────────────────────────────────────────────────────────
 
   private loop(ts: number): void {
     if (!this.running) return;
     let frame = (ts - this.lastTs) / 1000;
     this.lastTs = ts;
-    if (frame > 0.25) frame = 0.25; // защита от скачков (вкладка была свёрнута)
+    if (frame > 0.25) frame = 0.25; // guard against jumps (tab was in background)
 
     this.acc += frame;
     while (this.acc >= FIXED_DT) {
@@ -261,7 +261,7 @@ export class ArenaGame {
     this.raf = requestAnimationFrame((t) => this.loop(t));
   }
 
-  /** Снимок ввода для одного тика: движение, прицел, огонь. */
+  /** Input snapshot for one tick: move, aim, fire. */
   private sampleInput(): SimInput {
     const move = this.moveDir();
     const af = this.aimAndFire(move);
@@ -402,7 +402,7 @@ export class ArenaGame {
     o.stop(t + dur + 0.02);
   }
 
-  // ── Фоновая музыка ────────────────────────────────────────────────────────
+  // ── Background music ──────────────────────────────────────────────────────
 
   private startMusic(): void {
     const ac = this.audio;
@@ -421,8 +421,8 @@ export class ArenaGame {
     this.musicOn = false;
   }
 
-  /** Lookahead-планировщик музыки: ставим ноты в очередь по часам AudioContext.
-   *  Вызывается из игрового rAF-цикла - надёжнее setInterval на мобиле. */
+  /** Lookahead music scheduler: queues notes on the AudioContext clock.
+   *  Called from the game rAF loop, more reliable than setInterval on mobile. */
   private scheduleMusic(): void {
     const ac = this.audio;
     const out = this.musicGain;
@@ -440,18 +440,18 @@ export class ArenaGame {
     const s = step % MUSIC_STEPS_PER_BAR;
     const chord = MUSIC_PROG[bar];
     const barDur = MUSIC_STEP * MUSIC_STEPS_PER_BAR;
-    // Пэд: тянем весь аккорд на такт - сплошное «тело» фона (а не редкие щипки).
+    // Pad: hold the whole chord for a bar, gives the background some body.
     if (s === 0) {
       for (const n of chord.notes) {
         this.musicNote(n * 2, t, barDur * 0.98, "triangle", 0.16, out, 2000);
       }
     }
-    // Бас на 1-й и 3-й доле такта (тёплый, через ФНЧ).
+    // Bass on beats 1 and 3 (warm, through a lowpass).
     if (s === 0 || s === 8) {
       this.musicNote(chord.bass, t, 0.5, "sawtooth", 0.6, out, 700);
     }
-    // Ведущее арпеджио 8-ми нотами, октавой выше - яркая «пила», пробивает на
-    // телефонных динамиках. Ноты слегка перекрываются → слитная линия.
+    // Lead 8th-note arpeggio an octave up, bright saw so it cuts through
+    // phone speakers. Notes overlap a bit so it sounds legato.
     if (s % 2 === 0) {
       const tone = chord.notes[(s / 2) % chord.notes.length] * 2;
       this.musicNote(tone, t, 0.26, "sawtooth", 0.42, out, 2600);
@@ -490,13 +490,13 @@ export class ArenaGame {
     o.stop(t + dur + 0.03);
   }
 
-  // ── Отрисовка ─────────────────────────────────────────────────────────────
+  // ── Drawing ───────────────────────────────────────────────────────────────
 
   private render(): void {
     const ctx = this.ctx;
     this.computeView();
     ctx.clearRect(0, 0, this.w, this.h);
-    // леттербокс-фон вокруг поля
+    // letterbox background around the field
     ctx.fillStyle = "#02040a";
     ctx.fillRect(0, 0, this.w, this.h);
 
@@ -513,14 +513,14 @@ export class ArenaGame {
     ctx.rect(0, 0, VW, VH);
     ctx.clip();
 
-    // поле + сетка
+    // field + grid
     ctx.fillStyle = "#05080f";
     ctx.fillRect(0, 0, VW, VH);
     this.drawGrid();
 
     this.drawPowerups();
 
-    // частицы
+    // particles
     for (const p of this.particles) {
       const alpha = p.life / p.max;
       ctx.globalAlpha = alpha;
@@ -531,7 +531,7 @@ export class ArenaGame {
     }
     ctx.globalAlpha = 1;
 
-    // пули
+    // bullets
     ctx.shadowBlur = 12;
     ctx.shadowColor = "rgba(34,211,238,0.9)";
     ctx.strokeStyle = "rgba(103,232,249,0.85)";
@@ -552,7 +552,7 @@ export class ArenaGame {
       ctx.fill();
     }
 
-    // враги
+    // enemies
     for (const e of this.sim.enemies) {
       const angleToPlayer = Math.atan2(this.sim.py - e.y, this.sim.px - e.x);
       if (e.type === "grunt") {
@@ -570,17 +570,17 @@ export class ArenaGame {
       }
     }
 
-    // игрок (мигает в i-frames)
+    // player (blinks during i-frames)
     const blink =
       this.sim.invuln > 0 && Math.floor(this.sim.invuln * 20) % 2 === 0;
     if (!blink) this.drawShip();
     ctx.shadowBlur = 0;
 
-    // тач-стики
+    // touch sticks
     this.drawStick(this.moveStick, "148,163,184");
     this.drawStick(this.aimStick, "34,211,238");
 
-    // ретикль мыши (десктоп)
+    // mouse reticle (desktop)
     if (this.hasMouse && !this.aimStick.active) {
       ctx.strokeStyle = "rgba(34,211,238,0.55)";
       ctx.lineWidth = 1.5;
@@ -675,7 +675,7 @@ export class ArenaGame {
   private drawHud(): void {
     const ctx = this.ctx;
     const s = this.sim;
-    // счёт
+    // score
     ctx.fillStyle = "#f8fafc";
     ctx.font = "700 26px system-ui, sans-serif";
     ctx.textAlign = "center";
@@ -690,13 +690,13 @@ export class ArenaGame {
       ctx.fillText(`×${s.mult}`, this.w / 2, 66);
     }
 
-    // волна
+    // wave
     ctx.textAlign = "right";
     ctx.fillStyle = "#a78bfa";
     ctx.font = "700 14px system-ui, sans-serif";
     ctx.fillText(`WAVE ${s.wave}`, this.w - 12, 26);
 
-    // активные баффы
+    // active buffs
     const buffs: Array<[string, string, number, number]> = [];
     if (s.rapidTimer > 0)
       buffs.push(["RAPID", "#22d3ee", s.rapidTimer, RAPID_TIME]);
@@ -715,7 +715,7 @@ export class ArenaGame {
       by += 16;
     }
 
-    // здоровье
+    // health
     const barW = 120;
     const barH = 8;
     const x = 12;
@@ -774,7 +774,7 @@ export class ArenaGame {
     ctx.restore();
   }
 
-  // ── Ввод ──────────────────────────────────────────────────────────────────
+  // ── Input ─────────────────────────────────────────────────────────────────
 
   private onKeyDown = (e: KeyboardEvent) => {
     const k = e.key.toLowerCase();

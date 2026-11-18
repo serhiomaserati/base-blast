@@ -1,4 +1,4 @@
-/* Подключаем Tailwind v4 (preflight-сброс + утилиты). */
+/* Tailwind v4 (preflight reset + utilities). */
 @import "tailwindcss";
 
 :root {
@@ -20,13 +20,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Аркадный шрифт для заголовков/брендинга. */
+/* Arcade font for headings / branding. */
 .font-display {
   font-family: var(--font-orbitron), system-ui, sans-serif;
   letter-spacing: 0.04em;
 }
 
-/* Лёгкая ретро-сетка поверх тёмного фона. */
+/* Subtle retro grid over the dark background. */
 .retro-grid {
   background-image:
     linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),

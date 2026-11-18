@@ -3,20 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * Farcaster / Base App mini-app webhook.
  *
- * Клиент (Farcaster, Base App) шлёт сюда подписанные события жизненного цикла
- * аппы. Тело - JSON Farcaster Signature: { header, payload, signature },
- * где каждое поле - base64url-кодированный JSON.
+ * Clients (Farcaster, Base App) send signed mini app lifecycle events here.
+ * Body is a JSON Farcaster Signature: { header, payload, signature },
+ * each field is base64url-encoded JSON.
  *
  *   header  -> { fid, type, key }
  *   payload -> { event, notificationDetails? }
  *
- * События: "frame_added" | "frame_removed" |
+ * Events: "frame_added" | "frame_removed" |
  *          "notifications_enabled" | "notifications_disabled".
  *
- * Чтобы РЕАЛЬНО слать push-уведомления позже, нужно сохранять
- * notificationDetails.{url,token} в персистентном KV-сторе (Upstash Redis и т.п.),
- * привязав к payload header.fid. Сейчас стор не подключён - событие просто
- * валидируется и подтверждается (200), чтобы манифест был корректным для листинга.
+ * To actually send push notifications later, store
+ * notificationDetails.{url,token} in a persistent KV store (Upstash Redis etc.)
+ * keyed by header.fid. No store is wired up yet, so the event is just
+ * validated and acked (200) so the manifest is valid for listing.
  */
 
 type WebhookEvent =
@@ -61,16 +61,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Malformed event" }, { status: 400 });
   }
 
-  // Здесь подключается персистентность токенов уведомлений:
+  // Notification token storage goes here:
   switch (payload.event) {
     case "frame_added":
     case "notifications_enabled":
-      // TODO: сохранить payload.notificationDetails по header.fid в KV-стор.
+      // TODO: save payload.notificationDetails by header.fid in the KV store.
       console.log(`[webhook] ${payload.event} fid=${header.fid}`);
       break;
     case "frame_removed":
     case "notifications_disabled":
-      // TODO: удалить сохранённый токен по header.fid.
+      // TODO: delete the saved token for header.fid.
       console.log(`[webhook] ${payload.event} fid=${header.fid}`);
       break;
     default:

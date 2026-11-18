@@ -1,12 +1,12 @@
 // ───────────────────────────────────────────────────────────────────────────
-// Верификатор счёта (честный анти-чит).
+// Score verifier (the actual anti-cheat).
 //
-// Клиент шлёт записанный ран { address, run: { seed, inputs } }. Сервер:
-//   1. пересимулирует ран ДЕТЕРМИНИРОВАННО тем же кодом, что и клиент (lib/sim);
-//   2. берёт ТОЛЬКО свой посчитанный счёт (claim клиента игнорируется);
-//   3. подписывает EIP-712 (player, score, nonce) ключом доверенного подписанта.
+// The client sends the recorded run { address, run: { seed, inputs } }. The server:
+//   1. replays the run DETERMINISTICALLY with the same code as the client (lib/sim);
+//   2. uses ONLY its own score (whatever the client claims is ignored);
+//   3. signs EIP-712 (player, score, nonce) with the trusted signer key.
 //
-// Контракт принимает только такие подписи → накрутить счёт нельзя.
+// The contract only accepts these signatures, so you can't fake a score.
 // ───────────────────────────────────────────────────────────────────────────
 
 import { NextResponse } from "next/server";
@@ -16,7 +16,7 @@ import { simulateRun, type SimInput } from "@/lib/sim";
 
 export const runtime = "nodejs";
 
-const MAX_TICKS = 200_000; // ~55 мин при 60 тиков/с - потолок против огромных пейлоадов
+const MAX_TICKS = 200_000; // ~55 min at 60 ticks/s, cap against huge payloads
 
 const EIP712_TYPES = {
   Score: [
@@ -40,8 +40,8 @@ function sanitizeInputs(raw: unknown): SimInput[] | null {
     if (!Number.isFinite(moveX) || !Number.isFinite(moveY) || !Number.isFinite(aim)) {
       return null;
     }
-    // Движение клиент нормирует в круг радиуса 1; режем с небольшим допуском,
-    // чтобы инпуты не могли «разогнать» игрока быстрее задуманного.
+    // The client normalizes movement to a unit circle; clamp with a small margin
+    // so inputs can't make the player move faster than intended.
     const m = Math.hypot(moveX, moveY);
     const k = m > 1 ? 1 / m : 1;
     out[i] = {
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Bad inputs" }, { status: 400 });
   }
 
-  // Авторитетный счёт - результат нашей пересимуляции.
+  // The score that counts is the one from our replay.
   const result = simulateRun(seed, inputs);
   if (result.score <= 0) {
     return NextResponse.json({ error: "Zero score" }, { status: 400 });

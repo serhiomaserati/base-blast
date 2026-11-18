@@ -19,7 +19,7 @@ contract BaseBlastLeaderboardTest is Test {
         lb = new BaseBlastLeaderboard(owner, signer);
     }
 
-    // Подписать (player, score, nonce) ключом верификатора.
+    // Sign (player, score, nonce) with the verifier key.
     function _sign(
         uint256 pk,
         address player,
@@ -52,9 +52,9 @@ contract BaseBlastLeaderboardTest is Test {
 
     function test_OnlyHigherScoreUpdatesBest() public {
         _submit(alice, 1000, 1);
-        _submit(alice, 500, 2); // ниже - не должен перезаписать
+        _submit(alice, 500, 2); // lower, must not overwrite
         assertEq(lb.bestScore(alice), 1000);
-        _submit(alice, 1500, 3); // выше - обновляет
+        _submit(alice, 1500, 3); // higher, updates
         assertEq(lb.bestScore(alice), 1500);
         BaseBlastLeaderboard.Entry[] memory top = lb.getTop();
         assertEq(top.length, 1);
@@ -71,14 +71,14 @@ contract BaseBlastLeaderboardTest is Test {
     }
 
     function test_RevertOnWrongSigner() public {
-        bytes memory sig = _sign(0xBADBAD, alice, 1000, 1); // чужой ключ
+        bytes memory sig = _sign(0xBADBAD, alice, 1000, 1); // wrong key
         vm.prank(alice);
         vm.expectRevert(BaseBlastLeaderboard.InvalidSignature.selector);
         lb.submitScore(1000, 1, sig);
     }
 
     function test_RevertWhenAnotherPlayerStealsSignature() public {
-        // Подпись выписана на alice; bob пытается воспользоваться ей.
+        // Signature was issued for alice; bob tries to use it.
         bytes memory sig = _sign(SIGNER_PK, alice, 9999, 1);
         vm.prank(bob);
         vm.expectRevert(BaseBlastLeaderboard.InvalidSignature.selector);
@@ -100,7 +100,7 @@ contract BaseBlastLeaderboardTest is Test {
     function test_PlayerImprovementReordersTopWithoutDuplicate() public {
         _submit(alice, 1000, 1);
         _submit(bob, 2000, 1);
-        _submit(alice, 5000, 2); // alice обгоняет bob, без дубля
+        _submit(alice, 5000, 2); // alice passes bob, no duplicate
         BaseBlastLeaderboard.Entry[] memory top = lb.getTop();
         assertEq(top.length, 2);
         assertEq(top[0].player, alice);
