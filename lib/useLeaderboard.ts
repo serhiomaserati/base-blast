@@ -65,7 +65,7 @@ export type SubmitPhase =
 
 /** Поток отправки счёта: /api/score (подпись) → контракт submitScore.
  *  Если кошелёк (smart wallet) поддерживает EIP-5792 + paymaster и задан
- *  NEXT_PUBLIC_PAYMASTER_URL — сабмит идёт gasless (sendCalls). Иначе —
+ *  NEXT_PUBLIC_PAYMASTER_URL - сабмит идёт gasless (sendCalls). Иначе -
  *  обычная транзакция (игрок платит газ). */
 export function useSubmitScore() {
   const [phase, setPhase] = useState<SubmitPhase>("idle");
@@ -186,7 +186,7 @@ export function useSubmitScore() {
             functionName: "submitScore",
             args,
             chainId: LEADERBOARD_CHAIN_ID,
-            // Builder Code attribution — дописывается в calldata транзакции.
+            // Builder Code attribution - дописывается в calldata транзакции.
             dataSuffix: BUILDER_CODE_DATA_SUFFIX,
           });
           setHash(txHash);

@@ -52,9 +52,9 @@ contract BaseBlastLeaderboardTest is Test {
 
     function test_OnlyHigherScoreUpdatesBest() public {
         _submit(alice, 1000, 1);
-        _submit(alice, 500, 2); // ниже — не должен перезаписать
+        _submit(alice, 500, 2); // ниже - не должен перезаписать
         assertEq(lb.bestScore(alice), 1000);
-        _submit(alice, 1500, 3); // выше — обновляет
+        _submit(alice, 1500, 3); // выше - обновляет
         assertEq(lb.bestScore(alice), 1500);
         BaseBlastLeaderboard.Entry[] memory top = lb.getTop();
         assertEq(top.length, 1);

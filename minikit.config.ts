@@ -1,6 +1,6 @@
 // Канонический прод-домен мини-аппа. Манифест ДОЛЖЕН всегда отдавать один и тот
 // же адрес (под него подписан accountAssociation), поэтому не используем VERCEL_URL
-// — он у каждого деплоя свой. NEXT_PUBLIC_URL оставлен как ручной override.
+// - он у каждого деплоя свой. NEXT_PUBLIC_URL оставлен как ручной override.
 const ROOT_URL =
   process.env.NEXT_PUBLIC_URL ||
   (process.env.NODE_ENV === "development"
@@ -45,7 +45,7 @@ export const minikitConfig = {
     tags: ["arcade", "shooter", "survival", "base", "neon"],
     heroImageUrl: `${ROOT_URL}/hero.png`,
     tagline: "Survive the neon swarm.",
-    ogTitle: "Base Blast — survival shooter",
+    ogTitle: "Base Blast - survival shooter",
     ogDescription:
       "Survive the neon swarm, beat your best score, and share it.",
     ogImageUrl: `${ROOT_URL}/hero.png`,

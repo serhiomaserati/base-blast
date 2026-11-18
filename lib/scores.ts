@@ -17,7 +17,7 @@ export function saveBest(score: number): number {
   try {
     localStorage.setItem(STORAGE_KEY, String(best));
   } catch {
-    /* недоступно — игнорируем */
+    /* недоступно - игнорируем */
   }
   return best;
 }

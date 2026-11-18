@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
     other: {
       // Новый формат (Base App / актуальные клиенты).
       "fc:miniapp": embedJson,
-      // Легаси-формат — для совместимости со старыми Farcaster-клиентами.
+      // Легаси-формат - для совместимости со старыми Farcaster-клиентами.
       "fc:frame": embedJson,
       // Верификация владения доменом в Base Dashboard (base.dev).
       "base:app_id": "6a240987ab28df7fd2fc173c",

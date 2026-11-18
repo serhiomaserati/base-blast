@@ -16,7 +16,7 @@ import { simulateRun, type SimInput } from "@/lib/sim";
 
 export const runtime = "nodejs";
 
-const MAX_TICKS = 200_000; // ~55 мин при 60 тиков/с — потолок против огромных пейлоадов
+const MAX_TICKS = 200_000; // ~55 мин при 60 тиков/с - потолок против огромных пейлоадов
 
 const EIP712_TYPES = {
   Score: [
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Bad inputs" }, { status: 400 });
   }
 
-  // Авторитетный счёт — результат нашей пересимуляции.
+  // Авторитетный счёт - результат нашей пересимуляции.
   const result = simulateRun(seed, inputs);
   if (result.score <= 0) {
     return NextResponse.json({ error: "Zero score" }, { status: 400 });

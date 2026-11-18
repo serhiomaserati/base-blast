@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
  * Farcaster / Base App mini-app webhook.
  *
  * Клиент (Farcaster, Base App) шлёт сюда подписанные события жизненного цикла
- * аппы. Тело — JSON Farcaster Signature: { header, payload, signature },
- * где каждое поле — base64url-кодированный JSON.
+ * аппы. Тело - JSON Farcaster Signature: { header, payload, signature },
+ * где каждое поле - base64url-кодированный JSON.
  *
  *   header  -> { fid, type, key }
  *   payload -> { event, notificationDetails? }
@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
  *
  * Чтобы РЕАЛЬНО слать push-уведомления позже, нужно сохранять
  * notificationDetails.{url,token} в персистентном KV-сторе (Upstash Redis и т.п.),
- * привязав к payload header.fid. Сейчас стор не подключён — событие просто
+ * привязав к payload header.fid. Сейчас стор не подключён - событие просто
  * валидируется и подтверждается (200), чтобы манифест был корректным для листинга.
  */
 

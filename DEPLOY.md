@@ -5,7 +5,7 @@ The onchain leaderboard contract is already deployed & verified on **Base Sepoli
 (`0xf6719a176F7b54ea828597c5e61348149787c9B2`); this guide covers the **frontend +
 verifier API** hosting and the **mini-app manifest** (Base App embed).
 
-> Secrets (e.g. `SIGNER_PRIVATE_KEY`) are NOT in this file — copy their values from
+> Secrets (e.g. `SIGNER_PRIVATE_KEY`) are NOT in this file - copy their values from
 > your local `.env` (app) and `contracts/.env`. Never commit real secret values.
 
 ---
@@ -14,15 +14,15 @@ verifier API** hosting and the **mini-app manifest** (Base App embed).
 
 1. Go to <https://vercel.com/new> and import `serhiomaserati/base-blast`.
 2. Framework preset: **Next.js** (auto-detected). Root directory: **`./`** (the repo
-   root already is the Next app — leave default).
-3. **Don't deploy yet** — add the environment variables first (next step), otherwise the
+   root already is the Next app - leave default).
+3. **Don't deploy yet** - add the environment variables first (next step), otherwise the
    first build ships without the leaderboard wired.
 
 ## 2. Environment variables
 
 Add these in **Vercel → Project → Settings → Environment Variables** (Production +
 Preview). `NEXT_PUBLIC_*` are exposed to the browser by design; `SIGNER_PRIVATE_KEY` is
-server-only — keep it secret.
+server-only - keep it secret.
 
 | Variable | Value | Notes |
 |---|---|---|
@@ -31,7 +31,7 @@ server-only — keep it secret.
 | `NEXT_PUBLIC_LEADERBOARD_ADDRESS` | `0xf6719a176F7b54ea828597c5e61348149787c9B2` | deployed + verified |
 | `NEXT_PUBLIC_PAYMASTER_URL` | _from local `.env`_ | CDP Paymaster (gasless) |
 | `NEXT_PUBLIC_ONCHAINKIT_API_KEY` | _from CDP portal_ | recommended (RPC/wallet UX) |
-| `SIGNER_PRIVATE_KEY` | _from local `.env`_ | **secret** — server-only verifier key |
+| `SIGNER_PRIVATE_KEY` | _from local `.env`_ | **secret** - server-only verifier key |
 | `NEXT_PUBLIC_URL` | _leave empty for now_ | set in step 4 once you have the domain |
 
 > The signer key here must correspond to the `trustedSigner` the contract was deployed
@@ -42,7 +42,7 @@ server-only — keep it secret.
 
 Trigger the deploy. You'll get a URL like `https://base-blast-xxxx.vercel.app`
 (or attach a custom domain under **Settings → Domains**). Decide which domain is the
-canonical one — the mini-app manifest is **bound to exactly one domain**.
+canonical one - the mini-app manifest is **bound to exactly one domain**.
 
 ## 4. Set the canonical URL and redeploy
 
@@ -57,7 +57,7 @@ Verify it serves:
 curl https://<your-domain>/.well-known/farcaster.json
 ```
 
-You should see the `miniapp` block populated, but `accountAssociation` still empty —
+You should see the `miniapp` block populated, but `accountAssociation` still empty -
 that's the next step.
 
 ## 5. Verify the domain in Base Build (account association)
@@ -91,7 +91,7 @@ with your account.
 2. Connect a **Coinbase Smart Wallet** (gasless path needs a smart wallet).
 3. Play a run → **Game Over → Submit score onchain**. With the smart wallet +
    allowlisted Paymaster, it should post **gas-free** ("On leaderboard ✓ · gas-free").
-4. Open the **Ranks** tab — your address + score should appear (reads from the contract).
+4. Open the **Ranks** tab - your address + score should appear (reads from the contract).
 
 If submit fails with "policy rejected": confirm the CDP Paymaster allowlist includes
 contract `0xf6719a…9B2` **and** method `submitScore` (selector `0xf2c0a29a`).

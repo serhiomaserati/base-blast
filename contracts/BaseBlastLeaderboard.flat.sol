@@ -3988,7 +3988,7 @@ abstract contract EIP712 is IERC5267 {
 
 // src/BaseBlastLeaderboard.sol
 
-/// @title Base Blast — onchain leaderboard with server-verified scores.
+/// @title Base Blast - onchain leaderboard with server-verified scores.
 /// @notice Anti-cheat: a score is only accepted if signed (EIP-712) by the
 ///         trusted off-chain verifier, which re-simulates the run deterministically
 ///         before signing. The signature is bound to the player address and a

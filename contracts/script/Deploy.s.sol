@@ -5,8 +5,8 @@ import {Script, console} from "forge-std/Script.sol";
 import {BaseBlastLeaderboard} from "../src/BaseBlastLeaderboard.sol";
 
 /// @notice Deploy the leaderboard. Reads from env:
-///   DEPLOYER_PRIVATE_KEY — deployer (becomes owner)
-///   SIGNER_ADDRESS       — trusted verifier signer
+///   DEPLOYER_PRIVATE_KEY - deployer (becomes owner)
+///   SIGNER_ADDRESS       - trusted verifier signer
 ///
 /// Base Sepolia:
 ///   forge script script/Deploy.s.sol --rpc-url base_sepolia --broadcast --verify

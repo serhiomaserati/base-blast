@@ -410,8 +410,8 @@ export default function Home() {
                       className="grid grid-cols-[2rem_1fr_4rem] items-center gap-2 px-1 py-2 text-slate-600"
                     >
                       <span className="text-center font-bold">{r}</span>
-                      <span className="text-sm">—</span>
-                      <span className="text-right tabular-nums">—</span>
+                      <span className="text-sm">-</span>
+                      <span className="text-right tabular-nums">-</span>
                     </div>
                   ))}
                 </>
